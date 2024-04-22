@@ -1,20 +1,25 @@
+import concurrent.futures
+import copy
 import random
 import socket
 import struct
+import sys
 import time
 import ipaddress
 import threading
-from colorama import Fore
-from Bot import Bot
-from openpyxl import load_workbook
 import pygame
+
+from colorama import Fore
+
+from Bot import Bot
+
+from openpyxl import load_workbook
 
 
 def play_sound(sound_file):
     pygame.mixer.init()
     sound = pygame.mixer.Sound(sound_file)
     sound.play()
-
 
 def update_excel(filename, name):
     """
@@ -109,13 +114,20 @@ def get_local_ipv4_address():
     temp_sock.connect(("8.8.8.8", 80))
     return temp_sock.getsockname()[0]
 
+def find_available_port():
+    # Create a socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # Bind the socket to a random port
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
 
 # Define constants
 MAGIC_COOKIE = 0xabcddcba
 MESSAGE_TYPE_OFFER = 0x2
 LOCAL_IP = get_local_ipv4_address()
 server_name = pad_server_name("Lucky Bunnies")
-
+available_port = find_available_port()
 
 def get_local_broadcast_ip():
     # Get the local IP address
@@ -130,7 +142,7 @@ def get_local_broadcast_ip():
 def udp_broadcast():
     BROADCAST_IP = get_local_broadcast_ip()
     BROADCAST_PORT = 13117
-    server_port = 1710
+    server_port = available_port
     packed_data = struct.pack('!IB32sH', MAGIC_COOKIE, MESSAGE_TYPE_OFFER, server_name.encode('utf-8'), server_port)
 
     # Create a UDP socket
@@ -148,6 +160,16 @@ def udp_broadcast():
         print('Stopping broadcast')
         # Close the socket
         sock.close()
+    except OSError:
+        sock.close()
+
+#
+#
+# questions = {
+#     "Aston Villa's current manager is Pep Guardiola": True,
+#     "Aston Villa's home stadium is Villa Park": True,
+#     "Aston Villa has won the UEFA Champions League": False,
+# }
 
 questions = {
     "The capital city of Japan is Tokyo": True,
@@ -157,7 +179,7 @@ questions = {
     "The tallest mountain in the world is Mount Everest": True,
     "The largest country in the world by land area is Russia": True,
     "The city of Rome is located in France": False,
-    "The Nile River is the longest river in the world": True,
+    "The Nile River is the longest river in the world": False,
     "The Eiffel Tower is located in London": False,
     "The Dead Sea is the saltiest body of water in the world": True,
     "The Statue of Liberty was a gift from France to the United States": True,
@@ -291,7 +313,7 @@ def tcp_server(host, port, fill_bots=True, add_bots=0):
                     add_bots -= 1
                     server_socket.listen()
                     name = random.choice(bot_names)
-                    bot_thread = threading.Thread(target=Bot(name, address=LOCAL_IP, server_port=1710, isBot=True).run)
+                    bot_thread = threading.Thread(target=Bot(name, address=LOCAL_IP, server_port=available_port, isBot=True).run)
                     bot_thread.start()
                     client_socket, client_address = server_socket.accept()
                     client_handler = threading.Thread(target=handle_client, args=(i, client_socket, players))
@@ -306,7 +328,7 @@ def tcp_server(host, port, fill_bots=True, add_bots=0):
                     i += 1
                     server_socket.listen()
                     name = random.choice(bot_names)
-                    bot_thread = threading.Thread(target=Bot(name, address=LOCAL_IP, server_port=1710, isBot=True).run)
+                    bot_thread = threading.Thread(target=Bot(name, address=LOCAL_IP, server_port=available_port, isBot=True).run)
                     bot_thread.start()
                     client_socket, client_address = server_socket.accept()
                     client_handler = threading.Thread(target=handle_client, args=(i, client_socket, players))
@@ -379,11 +401,13 @@ def tcp_server(host, port, fill_bots=True, add_bots=0):
                 time.sleep(2)
                 update_excel('winners.xlsx', name)
                 top_three_players = get_top_three_players('winners.xlsx')
-                print(f'Game over!\nCongratulations to the winner: {name}\n All '
+                print(f'Game over!\nCongratulations to the winner: {name}\n)All '
                                                             f'Time Rankings \n {top_three_players}')
-                play_sound('win_sound.wav')
-                send_to_all(client_sockets_og, f'Game over!\nCongratulations to the winner: {name}\n All '
-                                                            f'Time Rankings \n {top_three_players}')
+
+                send_to_all(client_sockets_og, f'Game over!\nCongratulations to the winner: {name}\n')
+                time.sleep(0.5)
+                send_to_all(client_sockets_og,f'All Time Rankings\n{top_three_players}')
+                # play_sound('win_sound.wav')
                 time.sleep(2)
                 print("Game over, sending out offer requests...\n\n")
                 time.sleep(1)
@@ -437,6 +461,7 @@ def play(client_sockets, pid_to_name, question, curr_threads, tiebreaker=False, 
                 mess += f'{pid_to_name[player]} {client_answers[player]}\n'
 
     send_to_all(client_sockets, mess)
+    time.sleep(1)
 
     for player in client_answers.keys():
         if client_answers[player] != 'is correct!':
@@ -541,7 +566,7 @@ if __name__ == "__main__":
     # Start the server
     try:
         thread_a = threading.Thread(target=udp_broadcast)
-        thread_b = threading.Thread(target=tcp_server, args=(LOCAL_IP, 1710, False, 0))
+        thread_b = threading.Thread(target=tcp_server, args=(LOCAL_IP, available_port, True, 0))
         # Start both threads
         thread_a.start()
         thread_b.start()

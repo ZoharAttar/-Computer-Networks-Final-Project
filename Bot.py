@@ -30,37 +30,36 @@ class Bot(Client):
 
     def run(self):
         con = False
-
         if not self.isBot:
             print(Fore.YELLOW + f'{self.name} started, connecting to server...\n')
         while not self.disconnect:
             self.tcp_client(self.address, self.server_port, isBot=self.isBot)
 
 
-if __name__ == "__main__":
-    bot_names = [
-        "BOT_columbus",
-        "BOT_magellan",
-        "BOT_cook",
-        "BOT_vespucci",
-        "BOT_hudson",
-        "BOT_cabot",
-        "BOT_drake",
-        "BOT_marco_polo",
-        "BOT_champlain",
-        "BOT_cortes",
-        "BOT_pizarro",
-        "BOT_cartier",
-        "BOT_la_salle",
-        "BOT_park",
-        "BOT_livingstone",
-        "BOT_vasco_da_gama",
-        "BOT_pedro_alvares_cabral",
-        "BOT_zheng_he",
-        "BOT_meriwether_lewis",
-        "BOT_william_clark"
-    ]
-
-    bot_name = random.choice(bot_names)
-    bot = Bot(bot_name, address=get_local_ipv4_address(), server_port=1710)
-    bot.run()
+# if __name__ == "__main__":
+#     bot_names = [
+#         "BOT_columbus",
+#         "BOT_magellan",
+#         "BOT_cook",
+#         "BOT_vespucci",
+#         "BOT_hudson",
+#         "BOT_cabot",
+#         "BOT_drake",
+#         "BOT_marco_polo",
+#         "BOT_champlain",
+#         "BOT_cortes",
+#         "BOT_pizarro",
+#         "BOT_cartier",
+#         "BOT_la_salle",
+#         "BOT_park",
+#         "BOT_livingstone",
+#         "BOT_vasco_da_gama",
+#         "BOT_pedro_alvares_cabral",
+#         "BOT_zheng_he",
+#         "BOT_meriwether_lewis",
+#         "BOT_william_clark"
+#     ]
+#     # # port = server.available_port
+#     # bot_name = random.choice(bot_names)
+#     # bot = Bot(bot_name, address=get_local_ipv4_address(), server_port=port)
+#     # bot.run()

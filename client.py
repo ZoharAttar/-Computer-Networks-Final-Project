@@ -2,8 +2,8 @@ import socket
 import struct
 import threading
 import time
+import pygame
 from colorama import Fore
-
 
 LISTEN_PORT = 13117
 
@@ -16,6 +16,16 @@ class Client:
         self.address = 0
         self.server_port = 0
         self.disconnect = False
+
+    def play_sound(self, sound_file):
+        pygame.mixer.init()  # Initialize the mixer
+        sound = pygame.mixer.Sound(sound_file)  # Load the WAV file
+        sound.play()
+        return sound
+
+    def stop_sound(self, sound):
+        if sound:
+            sound.stop()
 
     def receive_udp_message(self):
         # Create a UDP socket
@@ -37,7 +47,8 @@ class Client:
                     if magic_cookie != 0xabcddcba or message_type != 0x2:
                         continue
                     else:
-                        print(Fore.CYAN + f"Received offer from server '{server_name}' at address {address}, attempting to connect...")
+                        print(
+                            Fore.CYAN + f"Received offer from server '{server_name}' at address {address}, attempting to connect...")
                         self.address = address
                         self.server_port = server_port
                         break
@@ -71,7 +82,7 @@ class Client:
         answer = self.get_input()
         client_socket.sendall(answer.encode())
 
-    def tcp_client(self, host, port, isBot = False):
+    def tcp_client(self, host, port, isBot=False):
         try:
             # Create a TCP/IP socket
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -84,6 +95,9 @@ class Client:
                         if data.decode().startswith("Game over!") or data.decode().startswith("Game is tied"):
                             if not isBot:
                                 print(Fore.RED + data.decode())
+                                self.stop_sound(sound)
+                                if self.name in data.decode():
+                                    self.play_sound('win_sound.wav')
                             if isBot:
                                 self.disconnect = True
                             break
@@ -92,8 +106,13 @@ class Client:
                                 print(Fore.CYAN + data.decode())
                             self.answering_questions(client_socket)
                         elif data.decode() != "":
-                                if not isBot:
-                                    print(Fore.LIGHTMAGENTA_EX + data.decode())
+                            if not isBot:
+                                print(Fore.LIGHTMAGENTA_EX + data.decode())
+                                if data.decode().startswith('Round'):
+                                    sound = self.play_sound('drum_roll.wav')
+                                if data.decode().startswith('Sorry'):
+                                    self.stop_sound(sound)
+
                         elif data.decode() == "":
                             break
                 except ConnectionRefusedError:
@@ -113,6 +132,7 @@ class Client:
                     print(Fore.RED + 'Shutting down client.... Goodbye!')
                 else:
                     print(Fore.RED + 'Server disconnected, listening for offer requests...\n\n')
+                self.stop_sound(sound)
 
     def run(self):
         while not self.disconnect:
@@ -122,7 +142,6 @@ class Client:
 
 
 if __name__ == "__main__":
-    player_name = 'ZOZO'
+    player_name = 'gab'
     client = Client(player_name)
     client.run()
-
