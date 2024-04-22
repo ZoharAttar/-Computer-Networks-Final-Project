@@ -9,8 +9,16 @@ LISTEN_PORT = 13117
 
 
 class Client:
+    """
+    A class representing a client for the networking game.
+    """
 
     def __init__(self, name):
+        """
+        Initialize the Client object.
+
+        :param name: The name of the client.
+        """
         self.name = name
         self.first = True
         self.address = 0
@@ -18,17 +26,30 @@ class Client:
         self.disconnect = False
 
     def play_sound(self, sound_file):
+        """
+        Play a sound.
+
+        :param sound_file: The file path of the sound.
+        :return: The pygame Sound object.
+        """
         pygame.mixer.init()  # Initialize the mixer
         sound = pygame.mixer.Sound(sound_file)  # Load the WAV file
         sound.play()
         return sound
 
     def stop_sound(self, sound):
+        """
+        Stop playing a sound.
+
+        :param sound: The pygame Sound object to stop.
+        """
         if sound:
             sound.stop()
 
     def receive_udp_message(self):
-        # Create a UDP socket
+        """
+        Receive UDP messages from the server.
+        """
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -37,7 +58,6 @@ class Client:
                 if self.first:
                     print(Fore.YELLOW + "Client started, listening for offer requests...")
 
-                # Receive data from the socket
                 while True:
                     sock.setblocking(True)
                     data, address = sock.recvfrom(1024)
@@ -59,8 +79,9 @@ class Client:
 
     def get_input(self):
         """
-        Get user input
-        :return: user input
+        Get user input.
+
+        :return: The user input.
         """
         flag = False
 
@@ -79,12 +100,23 @@ class Client:
             return user_input
 
     def answering_questions(self, client_socket):
+        """
+        Answer questions asked by the server.
+
+        :param client_socket: The TCP socket connected to the server.
+        """
         answer = self.get_input()
         client_socket.sendall(answer.encode())
 
     def tcp_client(self, host, port, isBot=False):
+        """
+        Connect to the server via TCP and handle communication.
+
+        :param host: The IP address of the server.
+        :param port: The port number of the server.
+        :param isBot: Boolean indicating whether the client is a bot.
+        """
         try:
-            # Create a TCP/IP socket
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 try:
                     client_socket.connect((host, port))
@@ -135,6 +167,9 @@ class Client:
                 self.stop_sound(sound)
 
     def run(self):
+        """
+        Run the client.
+        """
         while not self.disconnect:
             self.receive_udp_message()
             if not self.disconnect:
